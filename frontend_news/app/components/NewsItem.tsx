@@ -1,6 +1,9 @@
-// src/components/NewsItem.tsx
 import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { RectButton } from 'react-native-gesture-handler';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { useDispatch, useSelector } from 'react-redux';
+import { pinNewsItem, unpinNewsItem, deleteNewsItem } from '../redux/actions/newsAction';
 
 interface NewsItemProps {
   item: {
@@ -15,95 +18,162 @@ interface NewsItemProps {
     [key: string]: any;
   };
   sourceLogo: string;
+  sourceName: string;
   onPress: () => void;
-  onPin: () => void;
-  onDelete: () => void;
 }
 
-const NewsItem: React.FC<NewsItemProps> = ({ item, sourceLogo, onPress, onPin, onDelete }) => {
+const NewsItem: React.FC<NewsItemProps> = ({
+  item,
+  sourceLogo,
+  sourceName,
+  onPress,
+}) => {
+  const dispatch = useDispatch();
+  const isPinned = useSelector((state) =>
+    state.news.pinnedItems.some((pinnedItem) => pinnedItem.title === item.title)
+  );
+
+  const handlePin = () => {
+    dispatch(pinNewsItem(item));
+  };
+
+  const handleUnpin = () => {
+    dispatch(unpinNewsItem(item));
+  };
+
+  const handleDelete = () => {
+    dispatch(deleteNewsItem(item));
+  };
+
+  const renderRightActions = (progress, dragX) => {
+    const trans = dragX.interpolate({
+      inputRange: [-100, 0],
+      outputRange: [0, 100],
+    });
+
+    return (
+      <Animated.View style={{ transform: [{ translateX: trans }] }}>
+        <RectButton
+          style={[styles.actionButton, styles.pinButton]}
+          onPress={isPinned ? handleUnpin : handlePin}
+        >
+          <Text style={styles.actionText}>{isPinned ? 'Unpin' : 'Pin'}</Text>
+        </RectButton>
+        <RectButton style={styles.actionButton} onPress={handleDelete}>
+          <Text style={styles.actionText}>Delete</Text>
+        </RectButton>
+      </Animated.View>
+    );
+  };
+
   return (
-    <TouchableOpacity onPress={onPress} style={styles.container}>
-      <Image source={{ uri: sourceLogo }} style={styles.logo} />
-      <View style={styles.textContainer}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.timestamp}>{new Date(item.publishedAt).toLocaleTimeString()}</Text>
-        <Text style={styles.description}>{item.description}</Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity onPress={onPin} style={styles.button}>
-            <Text style={styles.buttonText}>Pin</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onDelete} style={styles.button}>
-            <Text style={styles.buttonText}>Delete</Text>
-          </TouchableOpacity>
+    <Swipeable renderRightActions={renderRightActions}>
+      <TouchableOpacity onPress={onPress} style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.sourceContainer}>
+            {sourceLogo && !sourceLogo.toLowerCase().includes('google') ? (
+              <Image source={{ uri: sourceLogo }} style={styles.sourceLogo} />
+            ) : (
+              <Image
+                source={require('../../assets/google-news-icon.png')}
+                style={styles.sourceLogo}
+              />
+            )}
+            <Text style={styles.sourceName}>{sourceName}</Text>
+          </View>
+          <Text style={styles.timestamp}>{new Date(item.publishedAt).toLocaleTimeString()}</Text>
         </View>
-      </View>
-      {item.urlToImage ? (
-        <Image source={{ uri: item.urlToImage }} style={styles.image} />
-      ) : (
-        <Image source={require('../../assets/favicon.png')} style={styles.image} />
-      )}
-    </TouchableOpacity>
+        <View style={styles.content}>
+          <View style={styles.textContainer}>
+            <Text style={styles.title}>{item.title}</Text>
+            <Text style={styles.author}>{item.author}</Text>
+          </View>
+          {item.urlToImage ? (
+            <Image source={{ uri: item.urlToImage }} style={styles.newsImage} />
+          ) : (
+            <Image source={require('../../assets/favicon.png')} style={styles.newsImage} />
+          )}
+        </View>
+      </TouchableOpacity>
+    </Swipeable>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: 'column',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    marginVertical: 8,
+    elevation: 1,
+  },
+  header: {
     flexDirection: 'row',
-    marginVertical: 10,
-    padding: 10,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  logo: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
+  sourceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  image: {
+  sourceLogo: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  sourceName: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  timestamp: {
+    fontSize: 12,
+    color: '#666',
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  textContainer: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  description: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  author: {
+    fontSize: 12,
+    color: '#AAA',
+  },
+  newsImage: {
     width: 75,
     height: 75,
     borderRadius: 8,
   },
-  textContainer: {
-    flex: 1,
+  actionButton: {
+    width: 80,
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ff6347',
+    marginHorizontal: 4,
+    borderRadius: 8,
   },
-  title: {
-    fontWeight: 'bold',
-    fontSize: 16,
+  pinButton: {
+    backgroundColor: '#ffd700',
   },
-  timestamp: {
-    fontSize: 12,
-    color: 'gray',
-  },
-  description: {
-    fontSize: 14,
-    color: 'gray',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  button: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-  },
-  buttonText: {
+  actionText: {
     color: '#fff',
-    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
 
-export default NewsItem;
-
-// Start with fixing styling, 
-// slider functions for pin and delete.
-// sourceUri should hnot be empty handle this.
+export default React.memo(NewsItem);

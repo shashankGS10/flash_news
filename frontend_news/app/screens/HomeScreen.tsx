@@ -1,89 +1,53 @@
-// src/screens/HomeScreen.tsx
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, Platform, StatusBar, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
 import NewsItem from '../components/NewsItem';
-import useFetchNews from '../hooks/useFetchNews';
-import useTimer from '../hooks/useTimer';
-import { getStoredHeadlines } from '../services/localStorage';
-import { fetchSources } from '../services/api';
+import { fetchAndStoreHeadlines, pinNewsItem, unpinNewsItem } from '../redux/actions/newsAction';
+import { RootState } from '../redux/reducers';
 
 const HomeScreen: React.FC = () => {
-  const { headlines, setHeadlines, fetchAndStoreHeadlines } = useFetchNews();
-  const [sources, setSources] = useState([]);
-  const [pinned, setPinned] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
   const navigation = useNavigation();
+  const headlines = useSelector((state: RootState) => state.news.headlines);
+  const pinned = useSelector((state: RootState) => state.news.pinned);
 
   useEffect(() => {
-    const loadSources = async () => {
-      const fetchedSources = await fetchSources();
-      setSources(fetchedSources);
-    };
+    dispatch(fetchAndStoreHeadlines());
+    dispatch({ type: 'LOAD_PINNED_NEWS' });
+  }, [dispatch]);
 
-    loadSources();
-    fetchAndStoreHeadlines();
-  }, []);
-
-  useEffect(() => {
-    if (pinned) {
-      setHeadlines((prev) => [pinned, ...prev.filter((item) => item.title !== pinned.title)]);
+  const handlePinToggle = (item: any) => {
+    if (pinned.some((pinnedItem) => pinnedItem.title === item.title)) {
+      dispatch(unpinNewsItem(item));
+    } else {
+      dispatch(pinNewsItem(item));
     }
-  }, [pinned]);
+  };
 
-  useTimer(() => {
-    const fetchNewHeadlines = async () => {
-      const newHeadlines = await getStoredHeadlines();
-      setHeadlines((prev) => [
-        ...newHeadlines.slice(0, 5).filter((item) => item.title !== pinned?.title),
-        ...prev,
-      ]);
-    };
-    fetchNewHeadlines();
-  }, 10000);
-
-  const handlePin = useCallback((item: any) => setPinned(item), []);
-  const handleDelete = useCallback((item: any) => {
-    setHeadlines((prev) => prev.filter((news) => news.title !== item.title));
-  }, []);
-  const handlePress = useCallback((item: any) => {
+  const handlePress = (item: any) => {
     navigation.navigate('NewsDetail', { item });
-  }, [navigation]);
-
-  const loadMoreHeadlines = async () => {
-    if (loading) return;
-    setLoading(true);
-    const newHeadlines = await getStoredHeadlines();
-    setHeadlines((prev) => [
-      ...prev,
-      ...newHeadlines.slice(prev.length, prev.length + 10).filter((item) => item.title !== pinned?.title),
-    ]);
-    setLoading(false);
   };
 
-  // Generate a source logo URL if it's not directly available.
-  const getSourceLogo = (sourceId: string) => {
-    const source = sources.find((source: any) => source.id === sourceId);
-    return source ? `${source.url}/favicon.ico` : ''; // This is a common convention, adjust as needed.
-  };
+  const renderItem = ({ item, index }) => (
+    <NewsItem
+      key={`${item.title}-${index}`}
+      item={item}
+      sourceName={item.source.name}
+      sourceLogo={`${item.source.url}/favicon.ico`}
+      onPin={() => handlePinToggle(item)}
+      onUnpin={() => handlePinToggle(item)}
+      onPress={() => handlePress(item)}
+      isPinned={pinned.some((pinnedItem) => pinnedItem.title === item.title)}
+    />
+  );
 
   return (
     <View style={styles.container}>
       <FlatList
         data={headlines}
-        renderItem={({ item, index }) => (
-          <NewsItem
-            key={`${item.title}-${index}`}
-            item={item}
-            sourceLogo={getSourceLogo(item.source.id)}
-            onPin={() => handlePin(item)}
-            onDelete={() => handleDelete(item)}
-            onPress={() => handlePress(item)}
-          />
-        )}
+        renderItem={renderItem}
         keyExtractor={(item, index) => `${item.title}-${index}`}
-        onEndReached={loadMoreHeadlines}
-        onEndReachedThreshold={0.5}
       />
     </View>
   );
