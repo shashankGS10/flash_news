@@ -1,4 +1,4 @@
-import { call, put, takeEvery } from 'redux-saga/effects';
+import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchNews } from '../../services/api';
 import { setHeadlines, setPinned } from '../actions/newsAction';
@@ -53,6 +53,21 @@ function getPinnedNews() {
   return AsyncStorage.getItem(PINNED_NEWS_KEY).then((jsonValue) =>
     jsonValue != null ? JSON.parse(jsonValue) : []
   );
+}
+
+
+function* fetchHeadlinesSaga(action: AnyAction) {
+  try {
+    const { page } = action.payload;
+    const headlines = yield call(fetchNews, page);
+    yield put(setHeadlines(headlines));
+  } catch (error) {
+    console.error('Error fetching headlines:', error);
+  }
+}
+
+function* watchFetchHeadlines() {
+  yield takeLatest('FETCH_AND_STORE_HEADLINES', fetchHeadlinesSaga);
 }
 
 export default function* newsSaga() {

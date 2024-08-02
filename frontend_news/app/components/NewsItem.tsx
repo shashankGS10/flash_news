@@ -1,4 +1,4 @@
-import React from 'react';
+import React , {memo} from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { RectButton } from 'react-native-gesture-handler';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
@@ -17,20 +17,29 @@ interface NewsItemProps {
     };
     [key: string]: any;
   };
-  sourceLogo: string;
-  sourceName: string;
   onPress: () => void;
 }
 
+interface NewsState {
+  headlines: NewsItem[];
+  pinned: NewsItem[];
+  logos: string[];
+}
+
+const initialState: NewsState = {
+  headlines: [],
+  pinned: [],
+  logos: [],
+};
+
 const NewsItem: React.FC<NewsItemProps> = ({
   item,
-  sourceLogo,
-  sourceName,
   onPress,
 }) => {
+  
   const dispatch = useDispatch();
   const isPinned = useSelector((state) =>
-    state.news.pinnedItems.some((pinnedItem) => pinnedItem.title === item.title)
+    state.news.pinned.some((pinnedItem) => pinnedItem.title === item.title)
   );
 
   const handlePin = () => {
@@ -50,6 +59,8 @@ const NewsItem: React.FC<NewsItemProps> = ({
       inputRange: [-100, 0],
       outputRange: [0, 100],
     });
+
+    
 
     return (
       <Animated.View style={{ transform: [{ translateX: trans }] }}>
@@ -71,22 +82,17 @@ const NewsItem: React.FC<NewsItemProps> = ({
       <TouchableOpacity onPress={onPress} style={styles.container}>
         <View style={styles.header}>
           <View style={styles.sourceContainer}>
-            {sourceLogo && !sourceLogo.toLowerCase().includes('google') ? (
-              <Image source={{ uri: sourceLogo }} style={styles.sourceLogo} />
-            ) : (
-              <Image
-                source={require('../../assets/google-news-icon.png')}
-                style={styles.sourceLogo}
-              />
-            )}
-            <Text style={styles.sourceName}>{sourceName}</Text>
+          {/* Fetch logo by the url provided using the above shared files */}
+          {item.uri ? <Image source={{uri:`${item.url}/favicon.ico`}} style={styles.sourceLogo}/>:
+          <Image source={require('../../assets/google-news-icon.png')} style={styles.sourceLogo}/>}
+          {/* Scope of Using fetchLogo dynamically get the source logo, for key words you have author, source.name and url - Write a Scraper*/}
+            <Text style={styles.sourceName}>{item.source.name}</Text>
           </View>
           <Text style={styles.timestamp}>{new Date(item.publishedAt).toLocaleTimeString()}</Text>
         </View>
         <View style={styles.content}>
           <View style={styles.textContainer}>
             <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.author}>{item.author}</Text>
           </View>
           {item.urlToImage ? (
             <Image source={{ uri: item.urlToImage }} style={styles.newsImage} />
@@ -176,4 +182,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default React.memo(NewsItem);
+export default memo(NewsItem);
