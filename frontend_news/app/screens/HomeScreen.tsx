@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, Platform, StatusBar, FlatList, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Platform, StatusBar, FlatList, ActivityIndicator,Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import NewsItem from '../components/NewsItem';
+import PinnedList from '../components/PinnedList';
 import { fetchAndStoreHeadlines, pinNewsItem, unpinNewsItem } from '../redux/actions/newsAction';
 import { RootState } from '../redux/reducers';
 
@@ -53,6 +54,14 @@ const HomeScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+     {pinned.length !== 0 && <View >
+        <Text style={styles.subHeaderText}>Pinned News</Text>
+      
+      <PinnedList pinned={pinned} handlePinToggle={handlePinToggle} handlePress={handlePress} />
+      </View>}
+      <View >
+        <Text style={styles.subHeaderText}>HeadLines Today</Text>
+      
      <FlatList
         data={headlines}
         renderItem={renderItem}
@@ -65,6 +74,7 @@ const HomeScreen: React.FC = () => {
         maxToRenderPerBatch={10}
         updateCellsBatchingPeriod={50}
       />
+      </View>
     </View>
   );
 };
@@ -73,6 +83,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
+  subHeaderText: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 

@@ -1,8 +1,9 @@
-import React , {memo} from 'react';
+import React, { memo } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { RectButton } from 'react-native-gesture-handler';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
-import { useDispatch, useSelector } from 'react-redux';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import { useDispatch } from 'react-redux';
 import { pinNewsItem, unpinNewsItem, deleteNewsItem } from '../redux/actions/newsAction';
 
 interface NewsItemProps {
@@ -18,29 +19,14 @@ interface NewsItemProps {
     [key: string]: any;
   };
   onPress: () => void;
+  onPin: () => void;
+  onUnpin: () => void;
+  onDelete: () => void;
+  isPinned: boolean;
 }
 
-interface NewsState {
-  headlines: NewsItem[];
-  pinned: NewsItem[];
-  logos: string[];
-}
-
-const initialState: NewsState = {
-  headlines: [],
-  pinned: [],
-  logos: [],
-};
-
-const NewsItem: React.FC<NewsItemProps> = ({
-  item,
-  onPress,
-}) => {
-  
+const NewsItem: React.FC<NewsItemProps> = ({ item, onPin, onUnpin, onPress, onDelete, isPinned }) => {
   const dispatch = useDispatch();
-  const isPinned = useSelector((state) =>
-    state.news.pinned.some((pinnedItem) => pinnedItem.title === item.title)
-  );
 
   const handlePin = () => {
     dispatch(pinNewsItem(item));
@@ -52,6 +38,11 @@ const NewsItem: React.FC<NewsItemProps> = ({
 
   const handleDelete = () => {
     dispatch(deleteNewsItem(item));
+    if (isPinned) {
+      onUnpin();
+    } else {
+      onPin();
+    }
   };
 
   const renderRightActions = (progress, dragX) => {
@@ -60,19 +51,16 @@ const NewsItem: React.FC<NewsItemProps> = ({
       outputRange: [0, 100],
     });
 
-    
-
     return (
-      <Animated.View style={{ transform: [{ translateX: trans }] }}>
-        <RectButton
-          style={[styles.actionButton, styles.pinButton]}
-          onPress={isPinned ? handleUnpin : handlePin}
-        >
-          <Text style={styles.actionText}>{isPinned ? 'Unpin' : 'Pin'}</Text>
-        </RectButton>
-        <RectButton style={styles.actionButton} onPress={handleDelete}>
-          <Text style={styles.actionText}>Delete</Text>
-        </RectButton>
+      <Animated.View style={{ transform: [{ translateX: trans }], height: '100%', flexDirection: 'start', justifyContent: 'center', alignItems:'center',}}>
+      <RectButton style={[styles.actionButton, isPinned ? styles.pinButton : null, styles.topLeftRadius]} onPress={isPinned ? handleUnpin : handlePin}>
+      <AntDesign name="pushpino" size={24} color="#fff" />
+        <Text style={styles.actionText}>{isPinned ? 'Unpin' : 'Pin'}</Text>
+      </RectButton>
+      <RectButton style={[styles.actionButton,styles.bottomLeftRadius]} onPress={handleDelete}>
+      <AntDesign name="delete" size={24} color="#fff" />
+        <Text style={styles.actionText}>Delete</Text>
+      </RectButton>
       </Animated.View>
     );
   };
@@ -82,10 +70,11 @@ const NewsItem: React.FC<NewsItemProps> = ({
       <TouchableOpacity onPress={onPress} style={styles.container}>
         <View style={styles.header}>
           <View style={styles.sourceContainer}>
-          {/* Fetch logo by the url provided using the above shared files */}
-          {item.uri ? <Image source={{uri:`${item.url}/favicon.ico`}} style={styles.sourceLogo}/>:
-          <Image source={require('../../assets/google-news-icon.png')} style={styles.sourceLogo}/>}
-          {/* Scope of Using fetchLogo dynamically get the source logo, for key words you have author, source.name and url - Write a Scraper*/}
+            {item.urlToImage ? (
+              <Image source={{ uri: `${item.url}/favicon.ico` }} style={styles.sourceLogo} />
+            ) : (
+              <Image source={require('../../assets/google-news-icon.png')} style={styles.sourceLogo} />
+            )}
             <Text style={styles.sourceName}>{item.source.name}</Text>
           </View>
           <Text style={styles.timestamp}>{new Date(item.publishedAt).toLocaleTimeString()}</Text>
@@ -151,34 +140,34 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  author: {
-    fontSize: 12,
-    color: '#AAA',
-  },
   newsImage: {
     width: 75,
     height: 75,
     borderRadius: 8,
   },
   actionButton: {
-    width: 80,
+    width: 100,
+    height:'45%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ff6347',
-    marginHorizontal: 4,
-    borderRadius: 8,
+    backgroundColor: '#4BBDFC',
+    flexDirection: 'column',
+    paddingVertical: 10
   },
   pinButton: {
-    backgroundColor: '#ffd700',
+    backgroundColor: '#FFD700',
+    
   },
   actionText: {
     color: '#fff',
     fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  topLeftRadius: {
+    borderTopLeftRadius: 16,
+  },
+  bottomLeftRadius: {
+    borderBottomLeftRadius: 16,
   },
 });
 
