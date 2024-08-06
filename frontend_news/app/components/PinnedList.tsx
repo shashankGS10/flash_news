@@ -45,7 +45,6 @@ const PinnedList: React.FC<{ pinned: NewsItem[], handlePress: (item: any) => voi
 const styles = StyleSheet.create({
   container: {
     paddingBottom: 10,
-    backgroundColor: '#fff',
   },
 });
 

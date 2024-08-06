@@ -77,7 +77,7 @@ const NewsItem: React.FC<NewsItemProps> = ({ item, onPin, onUnpin, onPress, onDe
             )}
             <Text style={styles.sourceName}>{item.source.name}</Text>
           </View>
-          <Text style={styles.timestamp}>{new Date(item.publishedAt).toLocaleTimeString()}</Text>
+          <Text style={styles.timestamp}>{new Date(item.publishedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
         </View>
         <View style={styles.content}>
           <View style={styles.textContainer}>
